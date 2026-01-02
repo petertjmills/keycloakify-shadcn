@@ -45,24 +45,28 @@
               };
 
               buildPhase = ''
-                mkdir -p $out
-
                 export KEYCLOAKIFY_USE_DEFAULT_MAVEN_REPO=false
-                export MAVEN_OPTS="-Dmaven.repo.local=$out/.m2"
 
-                pnpm build-keycloak-theme
+                pnpm build-keycloak-theme || true
               '';
 
               installPhase = ''
-                if [ -d "$out/.m2" ]; then
+                mkdir -p $out
+
+                # Copy from where keycloakify actually stores the Maven repo
+                if [ -d "node_modules/.cache/keycloakify/.m2" ]; then
+                  cp -r node_modules/.cache/keycloakify/.m2 $out/.m2
                   find $out/.m2 -name '*.lastUpdated' -delete || true
                   find $out/.m2 -name '_remote.repositories' -delete || true
+                else
+                  echo "ERROR: Maven repo not found at node_modules/.cache/keycloakify/.m2"
+                  exit 1
                 fi
               '';
 
               outputHashMode = "recursive";
               outputHashAlgo = "sha256";
-              outputHash = "sha256-pQpattmS9VmO3ZIQUFn66az8GSmB4IvYhTTCFn6SUmo=";
+              outputHash = pkgs.lib.fakeHash;
             };
           in
           # -------------------------------
@@ -89,8 +93,11 @@
             };
 
             buildPhase = ''
+              # Copy the pre-fetched Maven repo to where keycloakify expects it
+              mkdir -p node_modules/.cache/keycloakify
+              cp -r ${keycloakifyMavenRepo}/.m2 node_modules/.cache/keycloakify/.m2
+
               export KEYCLOAKIFY_USE_DEFAULT_MAVEN_REPO=false
-              export MAVEN_OPTS="-Dmaven.repo.local=${keycloakifyMavenRepo}/.m2"
               export MAVEN_ARGS="-o -nsu"
 
               pnpm build-keycloak-theme

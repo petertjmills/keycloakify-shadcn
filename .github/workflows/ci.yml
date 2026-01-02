@@ -89,7 +89,7 @@ jobs:
                   target_commitish: ${{ github.ref }}
                   generate_release_notes: true
                   draft: false
-                  files: build_keycloak/target/*.jar
+                  files: dist_keycloak/*.jar
 
     gh_pages:
         runs-on: ubuntu-latest
